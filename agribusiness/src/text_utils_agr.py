@@ -1387,6 +1387,78 @@ class CustomSpacyTokenizerCounts(object):
 
         return tokens
 
+    def segment_sentences(self, text, kw_processor):
+        """
+        Simple sentence segmenter. Split text at punctuation symbols included in sentencizer_default_punct_chars.
+        Exceptions: 1) if the new 'sentence' is less than 3 chars long (e.g. of min. acceptable: I am) then concatenate it with previous sentence
+                    2) if a full stop is found, don't create new sentence if it is part of a set of phrases that include a dot -
+                        create new sentence if next token after dot (and the space after it) is uppercase
+        :param text:
+        :param kw_processor:
+        :return:
+        """
+
+        punct = ['.', ':', ';', '?', '!']
+        sentences = []
+        sent = ""
+        next_sent = False
+        for i in range(len(text)):
+            if text[i] not in punct:
+                sent += text[i]
+            else:
+                # sent += text[i]
+                if text[i] == ".":
+                    # check if it is a special word that contains . Find 2 spaces since we have inserted space around the token
+                    j = i - 1
+                    p = 0
+                    while p < 2:
+                        if text[j] == ' ':
+                            p += 1
+                        j = j - 1
+                        if j == 0:
+                            break
+                    w = text[j + 1:i + 1].replace(" ", "")
+                    if len(w) > 1 and (
+                            w.lower() in kw_processor or w.lower() in {'mr.', 'mrs.', 'ms.', 'tel.', 'ref.', 'etc.', 'et.',
+                                                               'al.', 'jan.', 'feb.', 'mar.', 'apr.', 'aug.', 'sep.',
+                                                               'oct.', 'nov.', 'dec.', 'approx.', 'dept.', 'apt.',
+                                                               'appt.', 'est.', 'misc.', 'e.g.', 'u.s.', 'u.s.a.', 'u.k.'}):
+                        # will have double space if 2 punctuation marks are back to back
+                        sent += text[i]
+                    elif i < len(text) - 2:
+                        # i+2 as i+1 will be the space we have inserted
+                        if text[i + 2].isupper():
+                            sent += text[i]
+                            next_sent = True
+                else:
+                    sent += text[i]
+                    next_sent = True
+            if next_sent:
+                # for pu in punct:
+                #    if pu in sent:
+                #        sent = sent.replace(pu,"")
+                if text != ".":
+                    if len(sent) < 3:
+                        if len(sentences) > 0:
+                            sentences[-1] += sent.strip()
+                        else:
+                            sentences.append(sent.strip())
+                    else:
+                        sentences.append(sent.strip())
+                else:
+                    sentences.append(sent.strip())
+                sent = ""
+                next_sent = False
+        if len(sent) < 3:
+            if len(sentences) > 0:
+                sentences[-1] += sent.strip()
+            else:
+                sentences.append(sent.strip())
+        else:
+            sentences.append(sent.strip())
+
+        return sentences
+
 
     def __call__(self, text):
         """
