@@ -17,6 +17,7 @@ import warnings
 import html
 import string
 import unicodedata
+from plotly import graph_objects as go
 
 POS_EMOJIS = [u'😂', u'❤', u'♥', u'😍', u'😘', u'😊', u'👌', u'💕',
               u'👏', u'😁', u'☺', u'♡', u'👍', u'✌', u'😏', u'😉', u'🙌', u'😄']
@@ -775,6 +776,194 @@ def fix_plot_layout_and_save(fig, savename, xaxis_title="", yaxis_title="", titl
             pio.write_image(fig, savename.replace("html", "eps"), width=1024, height=570, scale=1)
         except:
             logging.info("Cannot save plotly static image for timeseries - saved only HTML")
+
+def plot_timeseries_with_confidence(timeseries, ts_to_plot, dates, xaxis_title, yaxis_title, title,
+                                                      name="", savename="", lcolor=["blue"], dashed=["dash"],
+                                    applyfn=None, smoothing_win=None, bounds=[], yrange=[], ci_window_smooth=1):
+    """
+
+    :param timeseries: timeseries wrt to which we will get the confidence intervals
+    :param ts_to_plot: list of time series to be plotted together with the confidence intervals
+    :param dates:
+    :param xaxis_title:
+    :param yaxis_title:
+    :param title:
+    :param name: list of names of the time series in ts_to_plot
+    :param savename:
+    :param lcolor:
+    :return: plot confidence intervals that are the smoothed upper and lower bounds of the daily summary
+    """
+    fig = go.Figure()
+    if lcolor != "":
+        line_dict = dict(color=lcolor)
+    else:
+        line_dict = None
+
+    smooth_n = ci_window_smooth
+    # get daily CIs and then smooth them
+    dataseries = pd.Series(timeseries)
+    if applyfn is None:
+        daily_summary_5p = dataseries.quantile(0.05, interpolation="lower")
+        lower_confidence_band = daily_summary_5p.rolling(smooth_n*smoothing_win).mean().dropna()
+        daily_summary_95p = dataseries.quantile(0.95, interpolation="lower")
+        upper_confidence_band = daily_summary_95p.rolling(smooth_n*smoothing_win).mean().dropna()
+    else:
+        daily_summary_5p = dataseries.apply(lambda x: np.quantile(x, 0.05, interpolation="lower"))
+        lower_confidence_band = daily_summary_5p.rolling(smooth_n*smoothing_win).mean().dropna()
+        daily_summary_95p = dataseries.apply(lambda x: np.quantile(x, 0.95, interpolation="lower"))
+        upper_confidence_band = daily_summary_95p.rolling(smooth_n*smoothing_win).mean().dropna()
+
+    dates = dates[(smooth_n-1) * smoothing_win:]
+    ts_to_plot[1] = ts_to_plot[1][(smooth_n-1) * smoothing_win:]
+    ts_to_plot[0] = ts_to_plot[0][(smooth_n-1) * smoothing_win:]
+
+    # color the rolling median
+    if len(bounds) > 0:
+        time = np.array(dates)
+        k = 0
+        curr_trace = []
+        curr_time = [time[0]]
+        plotk = ts_to_plot[1][k]
+        if plotk > bounds[1]:
+            curr_col = "Green"
+        elif plotk < bounds[1]:
+            curr_col = "Red"
+        else:
+            curr_col = "Blue"
+        while k < len(time):
+            plotk = ts_to_plot[1][k]
+            if plotk > bounds[1]:
+                new_col = "Green"
+            elif plotk < bounds[1]:
+                new_col = "Red"
+            else:
+                new_col = "Blue"
+            if new_col == curr_col:
+                curr_trace.append(plotk)
+                curr_time.append(time[k])
+                k = k + 1
+            else:
+                # plot for continuous visual even though in different color class
+                # curr_trace.append(plotk)
+                # curr_time.append(time[k])
+                if curr_col != "Blue":
+                    curr_trace.append(plotk)
+                    curr_time.append(time[k])
+                    fig.add_trace(go.Scatter(
+                        x=curr_time,
+                        y=curr_trace,
+                        showlegend=False, mode="lines", line=dict(color=curr_col)
+                    ))
+                    plotk = ts_to_plot[1][k]
+                    curr_trace = []
+                    curr_time = []
+                else:
+                    fig.add_trace(go.Scatter(
+                        x=curr_time[:-1],
+                        y=curr_trace[:-1],
+                        showlegend=False, mode="lines", line=dict(color=curr_col)
+                    ))
+
+                    plotk = ts_to_plot[1][k]
+                    curr_trace = [ts_to_plot[1][k - 1]]
+                    curr_time = [time[k - 1]]
+                    curr_trace.append(plotk)
+                    curr_time.append(time[k])
+                if plotk > bounds[1]:
+                    curr_col = "Green"
+                elif plotk < bounds[1]:
+                    curr_col = "Red"
+                else:
+                    curr_col = "Blue"
+                k = k + 1
+
+        fig.add_trace(go.Scatter(
+            x=curr_time,
+            y=curr_trace,
+            showlegend=True, name=name[1], mode="lines", line=dict(color=curr_col)
+        ))
+    else:
+        fig.add_trace(go.Scatter(
+            x=dates,
+            y=ts_to_plot[1],
+            name=name[1], mode="lines", line=line_dict
+        ))
+
+    # CI
+    fig.add_trace(go.Scatter(
+        name='',
+        x=dates,
+        y=upper_confidence_band.values,
+        mode='lines',
+        marker=dict(color="#444"),
+        line=dict(width=0),
+        showlegend=False
+    ))
+    fig.add_trace(go.Scatter(
+        name='',
+        x=dates,
+        y=lower_confidence_band.values,
+        marker=dict(color="#444"),
+        line=dict(width=0),
+        mode='lines',
+        fillcolor='rgba(68, 68, 68, 0.3)',
+        fill='tonexty',
+        showlegend=False
+    ))
+
+    if line_dict != None:
+        line_dict_mean = line_dict
+    else:
+        line_dict_mean = dict()
+    line_dict_mean["dash"] = "dash"
+    line_dict_mean["color"] = "black"
+    fig.add_trace(go.Scatter(
+        x=dates,
+        y=ts_to_plot[0],
+        name=name[0], mode="lines", line=line_dict_mean
+    ))
+
+    if len(yrange) > 0:
+        fig.update_yaxes(range=yrange)
+
+    if len(bounds) > 0:
+        # lower bound
+        xrng = dates
+        fig.add_shape(type='line',
+                      x0=xrng[0],
+                      y0=bounds[0],
+                      x1=xrng[-1],
+                      y1=bounds[0],
+                      line=dict(color='Red', dash='dot' ),
+                      xref='x',
+                      yref='y'
+                      )
+        # upper bound
+        fig.add_shape(type='line',
+                      x0=xrng[0],
+                      y0=bounds[2],
+                      x1=xrng[-1],
+                      y1=bounds[2],
+                      line=dict(color='Green', dash='dot'),
+                      xref='x',
+                      yref='y'
+                      )
+
+        # neutral line
+        fig.add_shape(type='line',
+                      x0=xrng[0],
+                      y0=bounds[1],
+                      x1=xrng[-1],
+                      y1=bounds[1],
+                      line=dict(color='Blue', dash='dot' ),
+                      xref='x',
+                      yref='y'
+                      )
+
+    fix_plot_layout_and_save(fig, savename, xaxis_title=xaxis_title, yaxis_title=yaxis_title, title=title,
+                              showgrid=False, showlegend=True)
+
+    return lower_confidence_band, upper_confidence_band
 
 def save_sparse_oneoff(sparse_mat1, f):
     """

@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     pwd = pathlib.Path.cwd()
     DIR = "{}/cbot_data/".format(pwd) 
-    DIR_out = "{}/cbot_data_out/".format(pwd) ################### cbot_data_Jan2023
+    DIR_out = "{}/cbot_data_out/".format(pwd) 
     pathlib.Path(DIR_out).mkdir(parents=True, exist_ok=True)
 
     cp = pd.read_csv("{}/cp_alldates.csv".format(DIR))["dates"].values.tolist()
