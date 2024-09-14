@@ -61,7 +61,7 @@ for (comm in commodities){
                            # pdf(sprintf("%sseason_%s_%s_%s_%s_%s_%s_%s.pdf", DIR_out, comm, contr, lex, lag, mprocess, caus, mdir))               
                            # plotdf %>% gg_season(oneminusp, polar = TRUE) + ylab("1 - pvalue") + xlab("Month")
                            # dev.off()                  
-                           
+                           # for boxplots
                            plotdf <- df %>% filter(commodity == comm,
                                                    marketproc == mprocess, 
                                                    lagstruct == lag,
