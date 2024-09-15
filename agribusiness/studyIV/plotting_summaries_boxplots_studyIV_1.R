@@ -4,15 +4,13 @@ library(feasts)
 library(dplyr)
 library(ggplot2)
 
-# DIR_out = "/home/yannis/Dropbox (Heriot-Watt University Team)/agrinlp/causality_matlab/results_out_causality_comresults/studyI/"
-
 pwd <- getwd()
-DIR_out <- sprintf("%s/results_structural_change_Sep2023/studyI/", pwd)
+DIR_out <- sprintf("%s/results_structural_change_Sep2023/studyIV/", pwd)
 timescaless <- list("daily", "hourly") 
 commodities <- list("corn", "wheat")
 contract <- list("front", "second")
 mprocesses <- list("PriceRaw", "PriceReturns", "volume", "RealVolatility")
-df <- read_csv(sprintf("%s/results_structural_change_Sep2023/studyI/studyI_data.csv", pwd))
+df <- read_csv(sprintf("%s/results_structural_change_Sep2023/studyIV/studyIV_data.csv", pwd))
 for (comm in commodities){
    for (contr in contract){
          if (comm == "wheat"){
@@ -60,7 +58,7 @@ for (comm in commodities){
                            # pdf(sprintf("%sseason_%s_%s_%s_%s_%s_%s_%s.pdf", DIR_out, comm, contr, lex, lag, mprocess, caus, mdir))               
                            # plotdf %>% gg_season(oneminusp, polar = TRUE) + ylab("1 - pvalue") + xlab("Month")
                            # dev.off()                  
-                           # for boxplots
+                           # boxplots
                            plotdf <- df %>% filter(commodity == comm,
                                                    marketproc == mprocess, 
                                                    lagstruct == lag,
