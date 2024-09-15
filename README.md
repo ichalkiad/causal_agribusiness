@@ -27,3 +27,18 @@ To address the research questions, the paper employs a statistical causality fra
 In addition to the novel insights into agricultural commodities markets, we significantly contribute to the methodology applied in this literature. In effect, we are able to present a novel example that allows one to combine both highly structured time-series data (price, volume, volatility) and unstructured data (text) to produce a new approach to Granger causal analysis. Whilst price time-series for asset exchange rates are well structured time-series, the modality of natural language text data has to be carefully processed into a sentiment index which inherits a structured format that can be studied in light of causal analysis of the observed price series. This is a challenge both in combining multiple sources of unstructured text data as well as constructing non-trivial sentiment index models representing the text from multiple documents on a time-series scale consistent with the price signal information.
 
 Finally, this paper presents a comprehensive lexicon of terms relevant to the agricultural commodities space and Agribusiness, which we hope will be an asset for researchers wanting to mine and leverage text data either from the Finance/Econometrics space ([Zhou et al., 2024](https://academic.oup.com/erae/article-abstract/51/2/399/7630435?redirectedFrom=fulltext)) or from disciplines that study different aspects of the commodities markets ([Blair et al., 2021](https://www.cambridge.org/core/journals/american-political-science-review/article/abs/do-commodity-price-shocks-cause-armed-conflict-a-metaanalysis-of-natural-experiments/469E8F1CBA02E4E5D525E3355DC401D9)).
+
+
+### Repository use
+
+To install the *agribusiness* package, clone the repository and execute:
+
+``` pip install -e . ```
+
+from within the *agribusiness/* folder.
+
+The repository is organised as follows:
+
+  1. *agribusiness/* contains the Python and R codes developed for the paper. The *agribusiness/src/* folder contains preprocessing and text processing scripts, while the rest of the folders correspond to code utilised in each of the studies in the paper. Numbering in the names of the scripts (_0,_1,_2 etc) indicates execution order due to dependencies on output files.
+  2. *causality_matlab/* contains MatLab code that implements the statistical causality framework of [Zaremba & Peters, 2022](https://link.springer.com/article/10.1007/s11009-022-09928-3) (please cite the paper if you use the MatLab code). Toplevel scripts are: *runner_causality_total_0.m* (for statistical causality studies) and *runner_0.m* (for structural change studies).
+  3. *data_nlp/* contains auxiliary files for the text processing part of the paper.
