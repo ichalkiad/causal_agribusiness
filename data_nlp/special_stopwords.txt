@@ -1,0 +1,14 @@
+<formula>
+<eos>
+<unk>
+@.@
+@-@
+@,@
+...
+the contract high 
+the 10-day moving average 
+the 20-day moving average 
+the 40-day moving average 
+the 200-day moving average 
+the contract low 
+
